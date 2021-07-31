@@ -14,21 +14,37 @@ import { Provider as PaperProvider } from "react-native-paper";
 import { Avatar, Button, Card, Title, Paragraph } from "react-native-paper";
 
 const App = () => {
-  let url =
-    "https://api.nytimes.com/svc/search/v2/articlesearch.json?q=election&api-key=IG3qlGHsgEzEwG0Dkbeuf4MSSruYwGLl";
-
-  const [results, setResults] = useState([]);
-
+  
+  let [results, setResults] = useState([]);
+  let [pageNumber, setpageNumber] = useState(0);
+  let [search, setsearch] = useState(0);
+  console.log(pageNumber);
+  
+  
   const fetchResults = async () => {
-    await fetch(`${url}`)
+    let baseUrl = "https://api.nytimes.com/svc/search/v2/articlesearch.json?q=election&api-";
+    let key = "key=IG3qlGHsgEzEwG0Dkbeuf4MSSruYwGLl";
+    let page = `&page=${pageNumber}`;
+    let searchTerm = `&q=${search}`;
+    await fetch(`${baseUrl}${key}${page}`)
       .then((res) => res.json())
       .then((data) => {
         setResults(data);
+      console.log(data);
       });
   }
 
+  const incrementPage = (page) => {
+    setpageNumber(pageNumber);
+    fetchResults();
+  }
+
+  const decrementPage = () => {
+    setpageNumber(pageNumber);
+    fetchResults();
+  }
+
   let articles = results.response;
-  console.log(articles);
   
   const handleOpenArticleUrl = (url) => {
     Linking.openURL(url);
@@ -38,7 +54,6 @@ const App = () => {
     <View style={[styles.container, styles.horizontal]}>
       <ActivityIndicator size="small" color="#0000ff" />
     </View>
-
   }
 
   useEffect(() => {
@@ -46,25 +61,21 @@ const App = () => {
   }, []);
 
 
-
   const docMapper = () => {
-    console.log(articles.docs[0].multimedia[0].url);
     return (
       <ScrollView>
-        {articles.docs.map((article, index) => (
+        { articles ?  articles.docs.map((article, index) => (
             <Card key={index} >
-            {/* <Card.Title title="Card Title" subtitle="Card Subtitle" /> */}
             <Card.Content>
               <Title> {article.headline.main} </Title>
               <Paragraph>{article.abstract}</Paragraph>
             </Card.Content>
-            {/* <Card.Cover alt="no image" source={article.multimedia[0].url} /> */}
             {article.multimedia.length > 0 ? <Card.Cover source={{uri : `http://www.nytimes.com/${article.multimedia[0].url}`}} /> : <Card.Cover alt="No img" /> }
             <Card.Actions>
               <Button onPress={() => handleOpenArticleUrl(article.web_url)} >Web Article</Button>
             </Card.Actions>
           </Card>
-        ))}
+        )) : <ActivityIndicator /> }
       </ScrollView>
     );
   };
@@ -76,6 +87,10 @@ const App = () => {
           <View style={[styles.container, styles.horizontal]}>
             <ActivityIndicator size="small" color="#0000ff" />
           </View> }
+          <View style={styles.buttonView} >
+            <Button onPress={() => incrementPage(pageNumber ++)} >Next page</Button>
+            { pageNumber > 0 ? <Button onPress={() => decrementPage(pageNumber --) } >Previous Page</Button> : null}
+          </View>
     </PaperProvider>
   );
 };
@@ -108,7 +123,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     padding: 10
-  }
+  }, 
+  buttonView : {
+    display: "flex"
+  },
+  decremenButton: {
+    display: 'none'
+  }, 
 });
 
 export default App;
