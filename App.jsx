@@ -1,96 +1,92 @@
 import React, { useRef, useState, useEffect } from "react";
 import {
   DrawerLayoutAndroid,
-  Text,
+  // Text,
   StyleSheet,
   View,
   ListItem,
   TextInput,
   ScrollView,
   Linking,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { Provider as PaperProvider } from "react-native-paper";
-import { Avatar, Button, Card, Title, Paragraph } from "react-native-paper";
+import {
+  Avatar,
+  Button,
+  Card,
+  Title,
+  Paragraph,
+  Searchbar,
+  Text,
+  Appbar
+} from "react-native-paper";
+import Display from "./components/Display";
 
 const App = () => {
-  
   let [results, setResults] = useState([]);
   let [pageNumber, setpageNumber] = useState(0);
-  let [search, setsearch] = useState(0);
-  console.log(pageNumber);
-  
-  
-  const fetchResults = async () => {
+  let [searchQuery, setSearchQuery] = useState("");
+  let [loading, setloading] = useState(true);
+
+  let scrollView = useRef(null);
+
+  const fetchResults = async (search) => {
     let baseUrl = "https://api.nytimes.com/svc/search/v2/articlesearch.json?q=election&api-";
     let key = "key=IG3qlGHsgEzEwG0Dkbeuf4MSSruYwGLl";
     let page = `&page=${pageNumber}`;
     let searchTerm = `&q=${search}`;
-    await fetch(`${baseUrl}${key}${page}`)
+
+    await fetch(`${baseUrl}${key}${page}${searchQuery}`)
       .then((res) => res.json())
       .then((data) => {
         setResults(data);
-      console.log(data);
+        console.log(data);
       });
-  }
+  };
+  let articles = results.response;
+
 
   const incrementPage = (page) => {
     setpageNumber(pageNumber);
     fetchResults();
-  }
+  };
 
   const decrementPage = () => {
     setpageNumber(pageNumber);
     fetchResults();
-  }
-
-  let articles = results.response;
-  
-  const handleOpenArticleUrl = (url) => {
-    Linking.openURL(url);
-  }
-
-  const Spinner = () => {
-    <View style={[styles.container, styles.horizontal]}>
-      <ActivityIndicator size="small" color="#0000ff" />
-    </View>
-  }
+  };
 
   useEffect(() => {
+    if (loading) {
+      setTimeout(() => {
+        setloading(false);
+      }, 2000);
+    }
     fetchResults();
+    return() => {
+      console.log('component unmounted');
+    }
   }, []);
-
-
-  const docMapper = () => {
-    return (
-      <ScrollView>
-        { articles ?  articles.docs.map((article, index) => (
-            <Card key={index} >
-            <Card.Content>
-              <Title> {article.headline.main} </Title>
-              <Paragraph>{article.abstract}</Paragraph>
-            </Card.Content>
-            {article.multimedia.length > 0 ? <Card.Cover source={{uri : `http://www.nytimes.com/${article.multimedia[0].url}`}} /> : <Card.Cover alt="No img" /> }
-            <Card.Actions>
-              <Button onPress={() => handleOpenArticleUrl(article.web_url)} >Web Article</Button>
-            </Card.Actions>
-          </Card>
-        )) : <ActivityIndicator /> }
-      </ScrollView>
-    );
-  };
 
   return (
     <PaperProvider>
-        {articles ? 
-        docMapper() : 
-          <View style={[styles.container, styles.horizontal]}>
+      <ScrollView ref={scrollView} style={styles.container}>
+        <Text style={{textAlign: 'center'}} >The Latest News From the New York Times</Text>
+        {articles ? (
+          <Display articles={articles} />
+          ) : (
             <ActivityIndicator size="small" color="#0000ff" />
-          </View> }
-          <View style={styles.buttonView} >
-            <Button onPress={() => incrementPage(pageNumber ++)} >Next page</Button>
-            { pageNumber > 0 ? <Button onPress={() => decrementPage(pageNumber --) } >Previous Page</Button> : null}
-          </View>
+            )}
+        <ScrollView style={styles.buttonView}>
+          <Button onPress={() => incrementPage(pageNumber++)}>Next page</Button>
+          {pageNumber > 0 ? (
+            <Button onPress={() => decrementPage(pageNumber--)}>
+              Previous Page
+            </Button>
+          ) : null}
+        </ScrollView>
+      </ScrollView>
     </PaperProvider>
   );
 };
@@ -98,12 +94,7 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 100,
-    color: "red",
-    display: "none",
+    marginTop: 40,
   },
   navigationContainer: {
     backgroundColor: "#ecf0f1",
@@ -117,19 +108,20 @@ const styles = StyleSheet.create({
     color: "red",
   },
   loadingText: {
-    justifyContent: 'center'
+    justifyContent: "center",
   },
-    horizontal: {
+  horizontal: {
     flexDirection: "row",
     justifyContent: "space-around",
-    padding: 10
-  }, 
-  buttonView : {
-    display: "flex"
+    padding: 10,
   },
+  buttonView: {},
   decremenButton: {
-    display: 'none'
-  }, 
+    display: "none",
+  },
+  searchBar: {
+    marginTop: "20px",
+  },
 });
 
 export default App;
